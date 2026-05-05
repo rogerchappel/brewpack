@@ -1,0 +1,27 @@
+name: Release dry run
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - releasebox.config.json
+      - .github/workflows/release*.yml
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run release:check

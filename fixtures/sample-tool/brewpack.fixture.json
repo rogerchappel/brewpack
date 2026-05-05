@@ -1,0 +1,23 @@
+{
+  "package": {
+    "name": "tea-time",
+    "version": "1.2.3",
+    "description": "Brew a pleasant cup of CLI tea.",
+    "license": "MIT",
+    "homepage": "https://example.com/tea-time",
+    "repository": "https://github.com/example/tea-time",
+    "binaries": ["tea-time"],
+    "caveats": [
+      "Set TEA_TIME_THEME=cozy for the sample theme.",
+      "Review the generated SHA before releasing."
+    ],
+    "test": {
+      "command": "tea-time --help",
+      "expect": "tea-time"
+    }
+  },
+  "tap": {
+    "owner": "rogerchappel",
+    "repo": "homebrew-tea-time"
+  }
+}

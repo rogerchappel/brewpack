@@ -1,0 +1,48 @@
+{
+  "name": "brewpack",
+  "version": "0.1.0",
+  "description": "Local-first toolkit for scaffolding and validating small Homebrew tap repositories.",
+  "type": "module",
+  "main": "./src/index.js",
+  "bin": {
+    "brewpack": "./bin/brewpack.js"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --test && npm run smoke",
+    "build": "node --eval \"import('./src/index.js')\"",
+    "smoke": "node ./bin/brewpack.js inspect ./fixtures/sample-tool --output ./tmp/smoke-inspect --format both && node ./bin/brewpack.js init ./fixtures/sample-tool --output ./tmp/smoke-tap --force && node ./bin/brewpack.js validate ./tmp/smoke-tap",
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm test && npm run build && npm run smoke && npm run package:smoke"
+  },
+  "keywords": [
+    "homebrew",
+    "tap",
+    "cli",
+    "packaging",
+    "local-first"
+  ],
+  "author": "Roger Chappel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerchappel/brewpack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rogerchappel/brewpack/issues"
+  },
+  "homepage": "https://github.com/rogerchappel/brewpack#readme"
+}

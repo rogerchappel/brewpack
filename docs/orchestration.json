@@ -1,0 +1,15 @@
+{
+  "project": "brewpack",
+  "owner": "single-subagent",
+  "repoRoot": "/Users/roger/Developer/my-opensource/brewpack",
+  "github": "rogerchappel/brewpack",
+  "branch": "main",
+  "qualityBar": [
+    "local-first MVP",
+    "fixture-backed tests",
+    "CLI smoke",
+    "README with examples and safety notes",
+    "public GitHub repo",
+    "branch protection attempted"
+  ]
+}
