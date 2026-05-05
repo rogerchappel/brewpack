@@ -1,9 +1,0 @@
-Package: tea-time@1.2.3
-Formula: TeaTime -> tea-time.rb
-Tap: rogerchappel/homebrew-tea-time
-Release archive: https://github.com/example/tea-time/archive/refs/tags/v1.2.3.tar.gz
-Binaries: tea-time
-Next:
-- Build release artifacts into dist/.
-- Generate or verify the GitHub release tarball hash.
-- Commit generated Formula and README files to the tap repository.
