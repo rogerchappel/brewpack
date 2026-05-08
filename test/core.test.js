@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPlan, parsePackageFixture, renderFormula } from '../src/core.js';
+import { buildPlan, parsePackageFixture, renderFormula, renderTapReadme } from '../src/core.js';
 import { initTap, inspectProject, validateTap } from '../src/lib.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -56,4 +56,12 @@ test('validateTap reports missing formula', async () => {
   const result = await validateTap(outputDir);
   assert.equal(result.valid, false);
   assert.deepEqual(result.missing, ['Formula/*.rb']);
+});
+
+
+test('renderTapReadme emits copy-pasteable brew commands', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  const readme = renderTapReadme(parsePackageFixture(raw));
+  assert.ok(readme.includes('```sh\nbrew tap rogerchappel/homebrew-tea-time\nbrew install tea-time\n```'));
+  assert.doesNotMatch(readme, /nbrew/);
 });
