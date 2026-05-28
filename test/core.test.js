@@ -4,8 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPlan, parsePackageFixture, renderFormula } from '../src/core.js';
-import { initTap, inspectProject, validateTap } from '../src/lib.js';
+import { buildPlan, packageJsonToFixture, parsePackageFixture, renderFormula } from '../dist/core.js';
+import { initTap, inspectProject, previewTap, validateTap } from '../dist/lib.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.join(__dirname, '..', 'fixtures', 'sample-tool');
@@ -56,4 +56,27 @@ test('validateTap reports missing formula', async () => {
   const result = await validateTap(outputDir);
   assert.equal(result.valid, false);
   assert.deepEqual(result.missing, ['Formula/*.rb']);
+});
+
+test('packageJsonToFixture maps package metadata without brewpack fixture', () => {
+  const fixture = packageJsonToFixture({
+    name: '@scope/demo-tool',
+    version: '0.2.0',
+    description: 'Demo package metadata.',
+    license: 'Apache-2.0',
+    repository: { url: 'git+https://github.com/example/demo-tool.git' },
+    bin: { demo: './bin/demo.js' }
+  });
+  const spec = parsePackageFixture(fixture);
+  assert.equal(spec.formulaName, 'scope-demo-tool');
+  assert.deepEqual(spec.binaries, ['demo']);
+  assert.equal(spec.repository, 'https://github.com/example/demo-tool');
+});
+
+test('previewTap returns dry-run files without writing output', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-preview-'));
+  const targetDir = path.join(outputDir, 'tap');
+  const preview = await previewTap(fixtureDir, targetDir);
+  assert.deepEqual(Object.keys(preview.files).sort(), ['Formula/tea-time.rb', 'README.md', 'brewpack.plan.json']);
+  await assert.rejects(fs.access(targetDir));
 });

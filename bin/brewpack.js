@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { inspectProject, initTap, validateTap } from '../src/lib.js';
+import { inspectProject, initTap, previewTap, validateTap } from '../dist/lib.js';
 
 function printHelp() {
-  console.log(`brewpack - local-first Homebrew tap scaffolding\n\nUsage:\n  brewpack inspect <fixture-dir> [--output <dir>] [--format json|text|both]\n  brewpack init <fixture-dir> --output <dir> [--force]\n  brewpack validate <tap-dir>\n  brewpack --help\n\nCommands:\n  inspect   Read a local fixture and emit a tap plan\n  init      Generate a tap skeleton with Formula and README\n  validate  Check a generated tap layout\n\nSafety:\n  - Only reads local files you point it at\n  - Never publishes or calls the network\n  - Use generated output as a starting point, not blind truth\n`);
+  console.log(`brewpack - local-first Homebrew tap scaffolding\n\nUsage:\n  brewpack inspect <fixture-dir> [--output <dir>] [--format json|text|both]\n  brewpack init <fixture-dir> --output <dir> [--force] [--dry-run]\n  brewpack validate <tap-dir>\n  brewpack --help\n\nCommands:\n  inspect   Read local package metadata and emit a tap plan\n  init      Generate or preview a tap skeleton with Formula and README\n  validate  Check a generated tap layout\n\nSafety:\n  - Only reads local files you point it at\n  - Never publishes or calls the network\n  - Use generated output as a starting point, not blind truth\n`);
 }
 
 function parseArgs(argv) {
@@ -82,6 +82,14 @@ async function main() {
     const inputDir = options._[0];
     const outputDir = options.output;
     if (!inputDir || !outputDir) throw new Error('init requires <fixture-dir> and --output <dir>.');
+    if (options['dry-run']) {
+      const result = await previewTap(inputDir, outputDir);
+      console.log(`Dry run: would generate tap scaffold in ${result.paths.root}`);
+      for (const [relativePath, contents] of Object.entries(result.files)) {
+        console.log(`\n--- ${relativePath} ---\n${contents.trimEnd()}`);
+      }
+      return;
+    }
     const result = await initTap(inputDir, outputDir, { force: Boolean(options.force) });
     console.log(`Generated tap scaffold in ${result.paths.root}`);
     console.log(`Formula: ${path.relative(process.cwd(), result.paths.formulaFile)}`);

@@ -18,7 +18,7 @@ run() {
   fi
 }
 
-for file in README.md CONTRIBUTING.md SECURITY.md package.json bin/brewpack.js src/index.js fixtures/sample-tool/brewpack.fixture.json; do
+for file in README.md CONTRIBUTING.md SECURITY.md package.json bin/brewpack.js src/index.ts fixtures/sample-tool/brewpack.fixture.json; do
   test -f "$file" && pass "required file exists: $file" || fail "missing required file: $file"
 done
 
