@@ -1,12 +1,14 @@
 {
   "project": "brewpack",
   "owner": "single-subagent",
-  "repoRoot": "/Users/roger/Developer/my-opensource/brewpack",
+  "repoRoot": "/Users/roger/Developer/my-opensource/_factory-worktrees/brewpack-20260529-am",
   "github": "rogerchappel/brewpack",
   "branch": "main",
   "qualityBar": [
     "local-first MVP",
     "fixture-backed tests",
+    "package.json metadata fallback",
+    "dry-run generated output",
     "CLI smoke",
     "README with examples and safety notes",
     "public GitHub repo",

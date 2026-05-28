@@ -1,0 +1,14 @@
+{
+  "name": "leaf-note",
+  "version": "0.4.1",
+  "description": "Tiny fixture CLI for package.json metadata discovery.",
+  "license": "MIT",
+  "homepage": "https://example.com/leaf-note",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/example/leaf-note.git"
+  },
+  "bin": {
+    "leaf-note": "./bin/leaf-note.js"
+  }
+}

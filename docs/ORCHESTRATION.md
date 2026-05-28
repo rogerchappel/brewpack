@@ -12,6 +12,7 @@ Single-owner build lane for the OSS factory.
 - Fixture-backed tests.
 - Real CLI smoke.
 - README/examples/safety docs.
-- 30–50 meaningful atomic commits where practical; no fake/no-op commits.
-- Public GitHub repo under rogerchappel/brewpack pushed to main.
+- Meaningful atomic commits where practical; no fake/no-op commits.
+- Public GitHub repo under rogerchappel/brewpack pushed to main when ship-ready, otherwise incubate/brewpack.
+- Rolling release candidate branch `release-candidate/brewpack` maintained for review.
 - Main branch protection attempted with the workspace helper.

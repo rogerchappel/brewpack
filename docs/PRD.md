@@ -1,23 +1,23 @@
 # brewpack
 
-Status: in-progress
-Decision: in-progress
+Status: MVP implemented
+Decision: release candidate
 
 ## Scorecard
 
-Total: 0/100
-Band: public backlog
-Last scored: 2026-05-02
-Scored by: Neo
+Total: 72/100
+Band: release candidate
+Last scored: 2026-05-29
+Scored by: OSS factory
 
 | Criterion | Points | Notes |
 |---|---:|---|
-| Problem pain | 0/20 | Needs qualification. |
-| Demand signal | 0/20 | Seed signal from source repo; needs independent validation. |
-| V1 buildability | 0/20 | Needs scoping pass. |
-| Differentiation | 0/15 | Renamed/reframed from adjacent inspiration. |
-| Agentic workflow leverage | 0/15 | Needs workflow fit assessment. |
-| Distribution potential | 0/10 | Needs demo/content angle. |
+| Problem pain | 14/20 | Reduces repeated Homebrew tap starter work for small tools. |
+| Demand signal | 8/20 | Seed signal only; public demand still needs validation. |
+| V1 buildability | 18/20 | Local deterministic MVP is implemented with tests and smoke. |
+| Differentiation | 12/15 | Fresh TypeScript CLI focused on local dry-run generation and validation. |
+| Agentic workflow leverage | 13/15 | Clear fixtures, dry runs, and validation fit automated OSS factory use. |
+| Distribution potential | 7/10 | Useful README/examples; broader content/demo still pending. |
 
 ## Pitch
 
@@ -52,7 +52,7 @@ Likely buildable as a deterministic CLI/library/demo if scoped to fixtures, loca
 ## V1 Scope
 
 - Generate tap repo structure
-- Create formula/cask templates from package metadata
+- Create formula templates from package metadata
 - Validate install block examples
 - Keep publish actions explicit and dry-run first
 
@@ -66,7 +66,10 @@ Likely buildable as a deterministic CLI/library/demo if scoped to fixtures, loca
 
 ```bash
 brewpack --help
-brewpack inspect ./fixtures/sample --output ./out
+brewpack inspect ./fixtures/sample-tool --output ./out --format both
+brewpack init ./fixtures/sample-tool --output ./tmp/homebrew-tea-time --dry-run
+brewpack init ./fixtures/sample-tool --output ./tmp/homebrew-tea-time --force
+brewpack validate ./tmp/homebrew-tea-time
 ```
 
 ## Verification
