@@ -19,4 +19,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: bash scripts/validate.sh
+      - run: npm run release:check
