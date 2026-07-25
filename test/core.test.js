@@ -43,6 +43,15 @@ test('renderFormula maps the declared test binary into Homebrew bin', async () =
   assert.doesNotMatch(formula, /tea-time --help/);
 });
 
+test('renderFormula rejects a test command for an undeclared binary', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.test.command = 'other-tool doctor';
+  assert.throws(
+    () => renderFormula(parsePackageFixture(raw)),
+    /test\.command must start with a declared binary: tea-time/
+  );
+});
+
 test('inspectProject reads local fixture', async () => {
   const payload = await inspectProject(fixtureDir);
   assert.equal(payload.spec.packageName, 'tea-time');
