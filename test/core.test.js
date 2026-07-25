@@ -34,6 +34,24 @@ test('renderFormula includes caveats and install block', async () => {
   assert.match(formula, /def caveats/);
 });
 
+test('renderFormula maps the declared test binary into Homebrew bin', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.test = { command: 'tea-time doctor --json', expect: '"healthy":true' };
+  const formula = renderFormula(parsePackageFixture(raw));
+  assert.match(formula, /shell_output\("#\{bin\}\/tea-time doctor --json"\)/);
+  assert.match(formula, /assert_match "\\"healthy\\":true", output/);
+  assert.doesNotMatch(formula, /tea-time --help/);
+});
+
+test('renderFormula rejects a test command for an undeclared binary', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.test.command = 'other-tool doctor';
+  assert.throws(
+    () => renderFormula(parsePackageFixture(raw)),
+    /test\.command must start with a declared binary: tea-time/
+  );
+});
+
 test('inspectProject reads local fixture', async () => {
   const payload = await inspectProject(fixtureDir);
   assert.equal(payload.spec.packageName, 'tea-time');
@@ -53,6 +71,16 @@ test('validateTap reports missing formula', async () => {
   const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-empty-'));
   await fs.writeFile(path.join(outputDir, 'README.md'), '# demo\n');
   await fs.mkdir(path.join(outputDir, 'Formula'));
+  const result = await validateTap(outputDir);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.missing, ['Formula/*.rb']);
+});
+
+test('validateTap ignores non-formula files in Formula', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-non-formula-'));
+  await fs.writeFile(path.join(outputDir, 'README.md'), '# demo\n');
+  await fs.mkdir(path.join(outputDir, 'Formula'));
+  await fs.writeFile(path.join(outputDir, 'Formula', 'notes.txt'), 'not a formula\n');
   const result = await validateTap(outputDir);
   assert.equal(result.valid, false);
   assert.deepEqual(result.missing, ['Formula/*.rb']);

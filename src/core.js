@@ -52,8 +52,16 @@ export function renderFormula(spec) {
     : '';
 
   const installLines = spec.binaries.map((bin) => `    bin.install "dist/${bin}"`).join('\n');
+  const command = spec.test.command.trim();
+  const separator = command.search(/\s/);
+  const executable = separator === -1 ? command : command.slice(0, separator);
+  const argumentsText = separator === -1 ? '' : command.slice(separator);
+  if (!spec.binaries.includes(executable)) {
+    throw new Error(`fixture.package.test.command must start with a declared binary: ${spec.binaries.join(', ')}.`);
+  }
+  const testCommand = `#{bin}/${executable}${argumentsText.replaceAll('#{', '\\#{')}`;
 
-  return `class ${spec.formulaClass} < Formula\n  desc ${JSON.stringify(spec.description)}\n  homepage ${JSON.stringify(spec.homepage)}\n  url ${JSON.stringify(`${spec.repository}/archive/refs/tags/v${spec.version}.tar.gz`)}\n  sha256 ${JSON.stringify('REPLACE_WITH_SHA256')}\n  license ${JSON.stringify(spec.license)}\n\n  def install\n${installLines}\n  end\n\n  test do\n    output = shell_output("#{bin}/${spec.binaries[0]} --help")\n    assert_match ${JSON.stringify(spec.test.expect)}, output\n  end${caveatBlock}end\n`;
+  return `class ${spec.formulaClass} < Formula\n  desc ${JSON.stringify(spec.description)}\n  homepage ${JSON.stringify(spec.homepage)}\n  url ${JSON.stringify(`${spec.repository}/archive/refs/tags/v${spec.version}.tar.gz`)}\n  sha256 ${JSON.stringify('REPLACE_WITH_SHA256')}\n  license ${JSON.stringify(spec.license)}\n\n  def install\n${installLines}\n  end\n\n  test do\n    output = shell_output(${JSON.stringify(testCommand)})\n    assert_match ${JSON.stringify(spec.test.expect)}, output\n  end${caveatBlock}end\n`;
 }
 
 export function renderTapReadme(spec) {

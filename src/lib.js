@@ -53,7 +53,7 @@ export async function validateTap(targetDir) {
   const formulaDir = path.join(targetDir, 'Formula');
   if (result.valid) {
     const formulas = await fs.readdir(formulaDir);
-    if (formulas.length === 0) {
+    if (!formulas.some((file) => file.endsWith('.rb'))) {
       return { valid: false, missing: ['Formula/*.rb'] };
     }
   }

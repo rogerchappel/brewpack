@@ -55,7 +55,11 @@ Create a `brewpack.fixture.json` file in a local directory:
     "description": "Brew a pleasant cup of CLI tea.",
     "license": "MIT",
     "repository": "https://github.com/example/tea-time",
-    "binaries": ["tea-time"]
+    "binaries": ["tea-time"],
+    "test": {
+      "command": "tea-time doctor --json",
+      "expect": "\"healthy\":true"
+    }
   },
   "tap": {
     "owner": "rogerchappel",
@@ -64,11 +68,17 @@ Create a `brewpack.fixture.json` file in a local directory:
 }
 ```
 
+The first word of `package.test.command` must match an entry in `package.binaries`.
+brewpack maps that word to Homebrew's `#{bin}/<binary>` path and preserves the
+remaining arguments. `package.test.expect` is rendered as the formula's expected
+output. When `test` is omitted, brewpack uses `<package-name> --help` and expects
+`Usage`.
+
 ## Commands
 
 - `brewpack inspect <fixture-dir>` — emits a human-readable and/or JSON plan
 - `brewpack init <fixture-dir> --output <dir>` — writes a tap scaffold locally
-- `brewpack validate <tap-dir>` — checks for a `Formula/` folder, at least one formula, and `README.md`
+- `brewpack validate <tap-dir>` — checks for a `Formula/` folder containing at least one `.rb` formula and `README.md`
 
 ## Safety boundaries
 
