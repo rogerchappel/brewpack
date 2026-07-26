@@ -16,13 +16,18 @@ test('parsePackageFixture normalises fixture data', async () => {
   assert.equal(spec.formulaClass, 'TeaTime');
   assert.equal(spec.owner, 'rogerchappel');
   assert.deepEqual(spec.binaries, ['tea-time']);
+  assert.equal(spec.artifact.install['tea-time'], 'dist/tea-time');
 });
 
 test('buildPlan returns release metadata', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   const spec = parsePackageFixture(raw);
   const plan = buildPlan(spec);
-  assert.match(plan.releaseArchiveUrl, /v1\.2\.3\.tar\.gz$/);
+  assert.equal(
+    plan.releaseArchiveUrl,
+    'https://github.com/example/tea-time/releases/download/v1.2.3/tea-time-1.2.3.tar.gz'
+  );
+  assert.deepEqual(plan.artifactInstall, { 'tea-time': 'dist/tea-time' });
   assert.equal(plan.tapRepository, 'rogerchappel/homebrew-tea-time');
 });
 
@@ -31,7 +36,35 @@ test('renderFormula includes caveats and install block', async () => {
   const formula = renderFormula(parsePackageFixture(raw));
   assert.match(formula, /class TeaTime < Formula/);
   assert.match(formula, /bin\.install "dist\/tea-time"/);
+  assert.match(formula, /releases\/download\/v1\.2\.3\/tea-time-1\.2\.3\.tar\.gz/);
   assert.match(formula, /def caveats/);
+});
+
+test('parsePackageFixture rejects incomplete artifact install declarations', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.binaries.push('tea-helper');
+  assert.throws(
+    () => parsePackageFixture(raw),
+    /install must match fixture\.package\.binaries \(missing install paths for: tea-helper\)/
+  );
+});
+
+test('parsePackageFixture rejects artifact paths for undeclared binaries', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.artifacts[0].install['tea-helper'] = 'dist/tea-helper';
+  assert.throws(
+    () => parsePackageFixture(raw),
+    /install must match fixture\.package\.binaries \(undeclared binaries: tea-helper\)/
+  );
+});
+
+test('parsePackageFixture rejects install paths outside the artifact', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.artifacts[0].install['tea-time'] = '../tea-time';
+  assert.throws(
+    () => parsePackageFixture(raw),
+    /install\.tea-time must be a relative path inside the artifact/
+  );
 });
 
 test('renderFormula maps the declared test binary into Homebrew bin', async () => {
@@ -92,4 +125,6 @@ test('renderTapReadme emits copy-pasteable brew commands', async () => {
   const readme = renderTapReadme(parsePackageFixture(raw));
   assert.ok(readme.includes('```sh\nbrew tap rogerchappel/homebrew-tea-time\nbrew install tea-time\n```'));
   assert.doesNotMatch(readme, /nbrew/);
+  assert.match(readme, /Download that exact URL and replace the formula SHA256/);
+  assert.match(readme, /releases\/download\/v1\.2\.3\/tea-time-1\.2\.3\.tar\.gz/);
 });
