@@ -6,6 +6,41 @@ function ensureObject(value, label) {
   }
 }
 
+function parseArtifact(raw, binaries) {
+  if (!Array.isArray(raw.artifacts) || raw.artifacts.length !== 1) {
+    throw new Error('fixture.artifacts must contain exactly one release artifact.');
+  }
+  const artifact = raw.artifacts[0];
+  ensureObject(artifact, 'fixture.artifacts[0]');
+  ensureObject(artifact.install, 'fixture.artifacts[0].install');
+  if (typeof artifact.url !== 'string' || !/^https?:\/\/\S+$/.test(artifact.url)) {
+    throw new Error('fixture.artifacts[0].url must be an absolute HTTP(S) URL.');
+  }
+
+  const declared = Object.keys(artifact.install);
+  const missing = binaries.filter((binary) => !declared.includes(binary));
+  const unknown = declared.filter((binary) => !binaries.includes(binary));
+  if (missing.length || unknown.length) {
+    const details = [
+      missing.length ? `missing install paths for: ${missing.join(', ')}` : '',
+      unknown.length ? `undeclared binaries: ${unknown.join(', ')}` : ''
+    ].filter(Boolean).join('; ');
+    throw new Error(`fixture.artifacts[0].install must match fixture.package.binaries (${details}).`);
+  }
+
+  for (const [binary, source] of Object.entries(artifact.install)) {
+    if (
+      typeof source !== 'string'
+      || !source
+      || path.isAbsolute(source)
+      || source.split(/[\\/]/).includes('..')
+    ) {
+      throw new Error(`fixture.artifacts[0].install.${binary} must be a relative path inside the artifact.`);
+    }
+  }
+  return { url: artifact.url, install: artifact.install };
+}
+
 export function parsePackageFixture(raw) {
   ensureObject(raw, 'fixture');
   const { package: pkg, tap } = raw;
@@ -26,6 +61,8 @@ export function parsePackageFixture(raw) {
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join('');
 
+  const binaries = Array.isArray(pkg.binaries) && pkg.binaries.length > 0 ? pkg.binaries : [slug];
+  const artifact = parseArtifact(raw, binaries);
   return {
     slug,
     formulaName: slug,
@@ -38,11 +75,11 @@ export function parsePackageFixture(raw) {
     repository,
     owner,
     repo,
-    binaries: Array.isArray(pkg.binaries) && pkg.binaries.length > 0 ? pkg.binaries : [slug],
+    binaries,
     install: pkg.install ?? {},
     caveats: pkg.caveats ?? [],
     test: pkg.test ?? { command: `${slug} --help`, expect: 'Usage' },
-    artifacts: raw.artifacts ?? []
+    artifact
   };
 }
 
@@ -51,7 +88,9 @@ export function renderFormula(spec) {
     ? `\n  def caveats\n    <<~EOS\n${spec.caveats.map((line) => `      ${line}`).join('\n')}\n    EOS\n  end\n`
     : '';
 
-  const installLines = spec.binaries.map((bin) => `    bin.install "dist/${bin}"`).join('\n');
+  const installLines = spec.binaries
+    .map((bin) => `    bin.install ${JSON.stringify(spec.artifact.install[bin])}`)
+    .join('\n');
   const command = spec.test.command.trim();
   const separator = command.search(/\s/);
   const executable = separator === -1 ? command : command.slice(0, separator);
@@ -61,7 +100,7 @@ export function renderFormula(spec) {
   }
   const testCommand = `#{bin}/${executable}${argumentsText.replaceAll('#{', '\\#{')}`;
 
-  return `class ${spec.formulaClass} < Formula\n  desc ${JSON.stringify(spec.description)}\n  homepage ${JSON.stringify(spec.homepage)}\n  url ${JSON.stringify(`${spec.repository}/archive/refs/tags/v${spec.version}.tar.gz`)}\n  sha256 ${JSON.stringify('REPLACE_WITH_SHA256')}\n  license ${JSON.stringify(spec.license)}\n\n  def install\n${installLines}\n  end\n\n  test do\n    output = shell_output(${JSON.stringify(testCommand)})\n    assert_match ${JSON.stringify(spec.test.expect)}, output\n  end${caveatBlock}end\n`;
+  return `class ${spec.formulaClass} < Formula\n  desc ${JSON.stringify(spec.description)}\n  homepage ${JSON.stringify(spec.homepage)}\n  url ${JSON.stringify(spec.artifact.url)}\n  sha256 ${JSON.stringify('REPLACE_WITH_SHA256')}\n  license ${JSON.stringify(spec.license)}\n\n  def install\n${installLines}\n  end\n\n  test do\n    output = shell_output(${JSON.stringify(testCommand)})\n    assert_match ${JSON.stringify(spec.test.expect)}, output\n  end${caveatBlock}end\n`;
 }
 
 export function renderTapReadme(spec) {
@@ -78,9 +117,9 @@ brew install ${spec.formulaName}
 
 ## Update checklist
 
-1. Build release artifacts locally.
-2. Upload them to a GitHub release for \`v${spec.version}\`.
-3. Replace the formula SHA256 after downloading the tarball.
+1. Build the release artifact containing: ${Object.values(spec.artifact.install).map((item) => `\`${item}\``).join(', ')}.
+2. Upload it to \`${spec.artifact.url}\`.
+3. Download that exact URL and replace the formula SHA256 with its checksum.
 4. Run \`brewpack validate .\` from the tap repo root.
 
 ## Safety
@@ -98,12 +137,13 @@ export function buildPlan(spec) {
     formulaName: spec.formulaName,
     formulaClass: spec.formulaClass,
     tapRepository: `${spec.owner}/${spec.repo}`,
-    releaseArchiveUrl: `${spec.repository}/archive/refs/tags/v${spec.version}.tar.gz`,
+    releaseArchiveUrl: spec.artifact.url,
+    artifactInstall: spec.artifact.install,
     binaries: spec.binaries,
     caveats: spec.caveats,
     nextSteps: [
-      'Build release artifacts into dist/.',
-      'Generate or verify the GitHub release tarball hash.',
+      `Build the release artifact with: ${Object.values(spec.artifact.install).join(', ')}.`,
+      `Download ${spec.artifact.url} and generate its SHA256.`,
       'Commit generated Formula and README files to the tap repository.'
     ]
   };

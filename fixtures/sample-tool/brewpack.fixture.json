@@ -16,6 +16,14 @@
       "expect": "tea-time"
     }
   },
+  "artifacts": [
+    {
+      "url": "https://github.com/example/tea-time/releases/download/v1.2.3/tea-time-1.2.3.tar.gz",
+      "install": {
+        "tea-time": "dist/tea-time"
+      }
+    }
+  ],
   "tap": {
     "owner": "rogerchappel",
     "repo": "homebrew-tea-time"
