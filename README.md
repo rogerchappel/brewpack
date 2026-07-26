@@ -61,6 +61,14 @@ Create a `brewpack.fixture.json` file in a local directory:
       "expect": "\"healthy\":true"
     }
   },
+  "artifacts": [
+    {
+      "url": "https://github.com/example/tea-time/releases/download/v1.2.3/tea-time-1.2.3.tar.gz",
+      "install": {
+        "tea-time": "dist/tea-time"
+      }
+    }
+  ],
   "tap": {
     "owner": "rogerchappel",
     "repo": "homebrew-tea-time"
@@ -73,6 +81,12 @@ brewpack maps that word to Homebrew's `#{bin}/<binary>` path and preserves the
 remaining arguments. `package.test.expect` is rendered as the formula's expected
 output. When `test` is omitted, brewpack uses `<package-name> --help` and expects
 `Usage`.
+
+`artifacts` must declare exactly one downloadable release archive. Its `install`
+object maps every entry in `package.binaries` to the relative path that archive
+contains. The keys must match the declared binaries exactly; missing, extra,
+absolute, and parent-traversing paths are rejected. The generated formula and
+checksum instructions both use the declared artifact URL.
 
 ## Commands
 
