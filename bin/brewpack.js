@@ -7,23 +7,60 @@ function printHelp() {
   console.log(`brewpack - local-first Homebrew tap scaffolding\n\nUsage:\n  brewpack inspect <fixture-dir> [--output <dir>] [--format json|text|both]\n  brewpack init <fixture-dir> --output <dir> [--force]\n  brewpack validate <tap-dir>\n  brewpack --help\n\nCommands:\n  inspect   Read a local fixture and emit a tap plan\n  init      Generate a tap skeleton with Formula and README\n  validate  Check a generated tap layout\n\nSafety:\n  - Only reads local files you point it at\n  - Never publishes or calls the network\n  - Use generated output as a starting point, not blind truth\n`);
 }
 
+const commandSpecs = {
+  inspect: {
+    positional: '<fixture-dir>',
+    options: { output: 'value', format: 'value' }
+  },
+  init: {
+    positional: '<fixture-dir>',
+    options: { output: 'value', force: 'boolean' }
+  },
+  validate: {
+    positional: '<tap-dir>',
+    options: {}
+  }
+};
+
 function parseArgs(argv) {
   const [command, ...rest] = argv;
+  const spec = commandSpecs[command];
+  if (!spec) throw new Error(`Unknown command: ${command}`);
   const options = { _: [] };
   for (let i = 0; i < rest.length; i += 1) {
     const token = rest[i];
     if (token.startsWith('--')) {
-      const key = token.slice(2);
+      const [key, attachedValue] = token.slice(2).split('=', 2);
+      const optionType = spec.options[key];
+      if (!optionType) throw new Error(`${command} does not support --${key}.`);
       const next = rest[i + 1];
-      if (!next || next.startsWith('--')) {
+      if (optionType === 'boolean') {
+        if (attachedValue !== undefined || (next && !next.startsWith('--'))) {
+          throw new Error(`--${key} does not take a value.`);
+        }
         options[key] = true;
-      } else {
-        options[key] = next;
-        i += 1;
+        continue;
       }
+      if (attachedValue !== undefined) {
+        if (!attachedValue) throw new Error(`--${key} requires a value.`);
+        options[key] = attachedValue;
+        continue;
+      }
+      if (!next || next.startsWith('--')) throw new Error(`--${key} requires a value.`);
+      options[key] = next;
+      i += 1;
     } else {
       options._.push(token);
     }
+  }
+  if (options._.length !== 1) {
+    throw new Error(`${command} requires exactly one ${spec.positional}.`);
+  }
+  if (command === 'init' && options.output === undefined) {
+    throw new Error('init requires --output <dir>.');
+  }
+  if (options.format !== undefined && !['json', 'text', 'both'].includes(options.format)) {
+    throw new Error('--format must be one of: json, text, both.');
   }
   return { command, options };
 }
@@ -57,7 +94,6 @@ async function main() {
 
   if (command === 'inspect') {
     const inputDir = options._[0];
-    if (!inputDir) throw new Error('inspect requires <fixture-dir>.');
     const payload = await inspectProject(inputDir);
     const text = renderTextInspection(payload);
     const format = options.format ?? 'text';
@@ -81,8 +117,7 @@ async function main() {
   if (command === 'init') {
     const inputDir = options._[0];
     const outputDir = options.output;
-    if (!inputDir || !outputDir) throw new Error('init requires <fixture-dir> and --output <dir>.');
-    const result = await initTap(inputDir, outputDir, { force: Boolean(options.force) });
+    const result = await initTap(inputDir, outputDir, { force: options.force === true });
     console.log(`Generated tap scaffold in ${result.paths.root}`);
     console.log(`Formula: ${path.relative(process.cwd(), result.paths.formulaFile)}`);
     return;
@@ -90,7 +125,6 @@ async function main() {
 
   if (command === 'validate') {
     const targetDir = options._[0];
-    if (!targetDir) throw new Error('validate requires <tap-dir>.');
     const result = await validateTap(targetDir);
     if (!result.valid) {
       console.error(`Invalid tap layout. Missing: ${result.missing.join(', ')}`);
@@ -100,8 +134,6 @@ async function main() {
     console.log('Tap layout looks valid.');
     return;
   }
-
-  throw new Error(`Unknown command: ${command}`);
 }
 
 main().catch((error) => {
