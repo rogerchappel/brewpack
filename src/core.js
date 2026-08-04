@@ -141,6 +141,11 @@ export function buildPlan(spec) {
     artifactInstall: spec.artifact.install,
     binaries: spec.binaries,
     caveats: spec.caveats,
+    generatedFiles: [
+      `Formula/${spec.formulaName}.rb`,
+      'README.md',
+      'brewpack.plan.json'
+    ],
     nextSteps: [
       `Build the release artifact with: ${Object.values(spec.artifact.install).join(', ')}.`,
       `Download ${spec.artifact.url} and generate its SHA256.`,
