@@ -91,8 +91,8 @@ checksum instructions both use the declared artifact URL.
 ## Commands
 
 - `brewpack inspect <fixture-dir> [--output <dir>] [--format json|text|both]` — emits a human-readable and/or JSON plan; `--output` also writes `inspection.json` and `inspection.txt`
-- `brewpack init <fixture-dir> --output <dir> [--force]` — writes a tap scaffold locally; plain `--force` permits replacing a nonempty target
-- `brewpack validate <tap-dir>` — checks for a `Formula/` folder containing at least one `.rb` formula and `README.md`
+- `brewpack init <fixture-dir> --output <dir> [--force]` — writes a tap scaffold locally; plain `--force` replaces brewpack-owned output, including a formula renamed by the fixture, while preserving unrelated files
+- `brewpack validate <tap-dir>` — checks the tap layout and verifies the formula recorded in brewpack generation metadata
 
 Each command accepts exactly one positional directory. Options are command-specific,
 and options such as `--output` and `--format` require a value. The `--force` option is

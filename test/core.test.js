@@ -100,6 +100,52 @@ test('initTap generates scaffold and validateTap passes', async () => {
   assert.equal(result.valid, true);
 });
 
+test('initTap force replaces a renamed generated formula and preserves unrelated files', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-rename-'));
+  const renamedFixture = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-fixture-'));
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  await initTap(fixtureDir, outputDir, { force: true });
+  await fs.writeFile(path.join(outputDir, 'Formula', 'custom.rb'), 'class Custom < Formula\nend\n');
+  await fs.writeFile(path.join(outputDir, 'notes.txt'), 'keep me\n');
+  raw.package.name = 'coffee-time';
+  raw.package.binaries = ['coffee-time'];
+  raw.package.test.command = 'coffee-time --help';
+  raw.artifacts[0].install = { 'coffee-time': 'dist/coffee-time' };
+  await fs.writeFile(path.join(renamedFixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+
+  await initTap(renamedFixture, outputDir, { force: true });
+
+  assert.deepEqual((await fs.readdir(path.join(outputDir, 'Formula'))).sort(), ['coffee-time.rb', 'custom.rb']);
+  assert.equal(await fs.readFile(path.join(outputDir, 'notes.txt'), 'utf8'), 'keep me\n');
+  const plan = JSON.parse(await fs.readFile(path.join(outputDir, 'brewpack.plan.json'), 'utf8'));
+  assert.equal(plan.formulaName, 'coffee-time');
+  assert.deepEqual(plan.generatedFiles, ['Formula/coffee-time.rb', 'README.md', 'brewpack.plan.json']);
+  const readme = await fs.readFile(path.join(outputDir, 'README.md'), 'utf8');
+  assert.match(readme, /coffee-time/);
+  assert.doesNotMatch(readme, /brew install tea-time/);
+});
+
+test('initTap refuses nonempty output without force and leaves generated files unchanged', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-no-force-'));
+  await initTap(fixtureDir, outputDir, { force: true });
+  const formulaBefore = await fs.readFile(path.join(outputDir, 'Formula', 'tea-time.rb'), 'utf8');
+
+  await assert.rejects(initTap(fixtureDir, outputDir), /already exists and is not empty/);
+  assert.equal(await fs.readFile(path.join(outputDir, 'Formula', 'tea-time.rb'), 'utf8'), formulaBefore);
+});
+
+test('validateTap reports a formula missing from generation metadata', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-owned-missing-'));
+  await initTap(fixtureDir, outputDir, { force: true });
+  await fs.rename(
+    path.join(outputDir, 'Formula', 'tea-time.rb'),
+    path.join(outputDir, 'Formula', 'stale-name.rb')
+  );
+  const result = await validateTap(outputDir);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.missing, ['Formula/tea-time.rb']);
+});
+
 test('validateTap reports missing formula', async () => {
   const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-empty-'));
   await fs.writeFile(path.join(outputDir, 'README.md'), '# demo\n');

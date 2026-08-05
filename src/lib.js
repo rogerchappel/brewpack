@@ -22,6 +22,23 @@ async function exists(filePath) {
   }
 }
 
+async function readPlan(filePath) {
+  try {
+    return await readJson(filePath);
+  } catch {
+    return null;
+  }
+}
+
+function ownedFormulaFromPlan(plan) {
+  const generatedFormula = plan?.generatedFiles?.find((file) => /^Formula\/[a-zA-Z0-9-]+\.rb$/.test(file));
+  if (generatedFormula) return generatedFormula;
+  if (typeof plan?.formulaName === 'string' && /^[a-zA-Z0-9-]+$/.test(plan.formulaName)) {
+    return `Formula/${plan.formulaName}.rb`;
+  }
+  return null;
+}
+
 export async function inspectProject(inputDir) {
   const fixture = await readJson(path.join(inputDir, 'brewpack.fixture.json'));
   const spec = parsePackageFixture(fixture);
@@ -32,6 +49,9 @@ export async function inspectProject(inputDir) {
 export async function initTap(inputDir, outputDir, { force = false } = {}) {
   const { spec, plan } = await inspectProject(inputDir);
   const paths = resolveOutputPaths(outputDir, spec);
+  const formula = renderFormula(spec);
+  const readme = renderTapReadme(spec);
+  const planJson = JSON.stringify(plan, null, 2) + '\n';
 
   if ((await exists(paths.root)) && !force) {
     const current = await fs.readdir(paths.root);
@@ -40,10 +60,18 @@ export async function initTap(inputDir, outputDir, { force = false } = {}) {
     }
   }
 
+  if (force) {
+    const previousPlan = await readPlan(paths.planFile);
+    const previousFormula = ownedFormulaFromPlan(previousPlan);
+    if (previousFormula && previousFormula !== `Formula/${spec.formulaName}.rb`) {
+      await fs.rm(path.join(paths.root, previousFormula), { force: true });
+    }
+  }
+
   await fs.mkdir(paths.formulaDir, { recursive: true });
-  await fs.writeFile(paths.formulaFile, renderFormula(spec));
-  await fs.writeFile(paths.readmeFile, renderTapReadme(spec));
-  await fs.writeFile(paths.planFile, JSON.stringify(plan, null, 2) + '\n');
+  await fs.writeFile(paths.formulaFile, formula);
+  await fs.writeFile(paths.readmeFile, readme);
+  await fs.writeFile(paths.planFile, planJson);
   return { spec, plan, paths };
 }
 
@@ -55,6 +83,11 @@ export async function validateTap(targetDir) {
     const formulas = await fs.readdir(formulaDir);
     if (!formulas.some((file) => file.endsWith('.rb'))) {
       return { valid: false, missing: ['Formula/*.rb'] };
+    }
+    const plan = await readPlan(path.join(targetDir, 'brewpack.plan.json'));
+    const expectedFormula = ownedFormulaFromPlan(plan);
+    if (expectedFormula && !formulas.includes(path.basename(expectedFormula))) {
+      return { valid: false, missing: [expectedFormula] };
     }
   }
   return result;
