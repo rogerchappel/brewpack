@@ -92,7 +92,7 @@ checksum instructions both use the declared artifact URL.
 
 - `brewpack inspect <fixture-dir> [--output <dir>] [--format json|text|both]` — emits a human-readable and/or JSON plan; `--output` also writes `inspection.json` and `inspection.txt`
 - `brewpack init <fixture-dir> --output <dir> [--force]` — writes a tap scaffold locally; plain `--force` replaces brewpack-owned output, including a formula renamed by the fixture, while preserving unrelated files
-- `brewpack validate <tap-dir>` — checks the tap layout and verifies the formula recorded in brewpack generation metadata
+- `brewpack validate <tap-dir>` — checks the tap layout, verifies the formula recorded in brewpack generation metadata, and requires every formula to contain a 64-hex-character SHA256
 
 Each command accepts exactly one positional directory. Options are command-specific,
 and options such as `--output` and `--format` require a value. The `--force` option is
@@ -103,7 +103,7 @@ a boolean switch and does not accept a value such as `--force false`.
 - Local files only.
 - No publishing or release uploads.
 - No hash fetching, credential access, analytics, or telemetry.
-- Generated formula SHA values are placeholders that must be reviewed by a human.
+- Generated formula SHA values are placeholders that must be replaced with the downloaded release archive's real 64-character hexadecimal SHA256. Validation rejects both `REPLACE_WITH_SHA256` and malformed checksums.
 
 ## Verification
 
