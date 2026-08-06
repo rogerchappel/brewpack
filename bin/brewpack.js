@@ -127,7 +127,10 @@ async function main() {
     const targetDir = options._[0];
     const result = await validateTap(targetDir);
     if (!result.valid) {
-      console.error(`Invalid tap layout. Missing: ${result.missing.join(', ')}`);
+      if (result.missing.length) {
+        console.error(`Invalid tap layout. Missing: ${result.missing.join(', ')}`);
+      }
+      for (const error of result.errors ?? []) console.error(`Invalid formula checksum. ${error}`);
       process.exitCode = 1;
       return;
     }

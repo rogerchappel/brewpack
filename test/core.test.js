@@ -96,8 +96,35 @@ test('initTap generates scaffold and validateTap passes', async () => {
   await initTap(fixtureDir, outputDir, { force: true });
   const formula = await fs.readFile(path.join(outputDir, 'Formula', 'tea-time.rb'), 'utf8');
   assert.match(formula, /TeaTime/);
+  await fs.writeFile(
+    path.join(outputDir, 'Formula', 'tea-time.rb'),
+    formula.replace('REPLACE_WITH_SHA256', 'a'.repeat(64))
+  );
   const result = await validateTap(outputDir);
   assert.equal(result.valid, true);
+});
+
+test('validateTap rejects the generated checksum placeholder', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-placeholder-'));
+  await initTap(fixtureDir, outputDir, { force: true });
+  const result = await validateTap(outputDir);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors, [
+    'Formula/tea-time.rb: replace REPLACE_WITH_SHA256 with the release archive checksum'
+  ]);
+});
+
+test('validateTap rejects malformed checksums and accepts 64 hex characters', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-checksum-'));
+  await initTap(fixtureDir, outputDir, { force: true });
+  const formulaPath = path.join(outputDir, 'Formula', 'tea-time.rb');
+  const formula = await fs.readFile(formulaPath, 'utf8');
+  await fs.writeFile(formulaPath, formula.replace('REPLACE_WITH_SHA256', 'not-a-checksum'));
+  const malformed = await validateTap(outputDir);
+  assert.equal(malformed.valid, false);
+  assert.match(malformed.errors[0], /exactly 64 hexadecimal characters/);
+  await fs.writeFile(formulaPath, formula.replace('REPLACE_WITH_SHA256', 'ABCDEF0123456789'.repeat(4)));
+  assert.equal((await validateTap(outputDir)).valid, true);
 });
 
 test('initTap force replaces a renamed generated formula and preserves unrelated files', async () => {

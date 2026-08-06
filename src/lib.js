@@ -89,6 +89,20 @@ export async function validateTap(targetDir) {
     if (expectedFormula && !formulas.includes(path.basename(expectedFormula))) {
       return { valid: false, missing: [expectedFormula] };
     }
+    const checksumErrors = [];
+    for (const formula of formulas.filter((file) => file.endsWith('.rb'))) {
+      const relativePath = `Formula/${formula}`;
+      const source = await fs.readFile(path.join(formulaDir, formula), 'utf8');
+      const checksum = source.match(/^\s*sha256\s+["']([^"']*)["']/m)?.[1];
+      if (checksum === 'REPLACE_WITH_SHA256') {
+        checksumErrors.push(`${relativePath}: replace REPLACE_WITH_SHA256 with the release archive checksum`);
+      } else if (!checksum || !/^[a-fA-F0-9]{64}$/.test(checksum)) {
+        checksumErrors.push(`${relativePath}: sha256 must be exactly 64 hexadecimal characters`);
+      }
+    }
+    if (checksumErrors.length) {
+      return { valid: false, missing: [], errors: checksumErrors };
+    }
   }
   return result;
 }
