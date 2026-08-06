@@ -85,10 +85,20 @@ describe('brewpack CLI', () => {
     assert.match(result.stderr, /Missing: Formula\/\*\.rb/);
   });
 
-  it('accepts a Formula directory containing a .rb formula', () => {
+  it('rejects the generated placeholder with a checksum diagnostic', () => {
+    const tap = mkdtempSync(join(tmpdir(), 'brewpack-cli-placeholder-'));
+    mkdirSync(join(tap, 'Formula'));
+    writeFileSync(join(tap, 'Formula', 'demo.rb'), 'class Demo < Formula\n  sha256 "REPLACE_WITH_SHA256"\nend\n');
+    writeFileSync(join(tap, 'README.md'), '# demo\n');
+    const result = spawnSync(process.execPath, [cli, 'validate', tap], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Invalid formula checksum.*replace REPLACE_WITH_SHA256/);
+  });
+
+  it('accepts a Formula directory containing a .rb formula with a valid checksum', () => {
     const tap = mkdtempSync(join(tmpdir(), 'brewpack-cli-valid-'));
     mkdirSync(join(tap, 'Formula'));
-    writeFileSync(join(tap, 'Formula', 'demo.rb'), 'class Demo < Formula\nend\n');
+    writeFileSync(join(tap, 'Formula', 'demo.rb'), `class Demo < Formula\n  sha256 "${'a'.repeat(64)}"\nend\n`);
     writeFileSync(join(tap, 'README.md'), '# demo\n');
     const output = execFileSync(process.execPath, [cli, 'validate', tap], { encoding: 'utf8' });
     assert.match(output, /Tap layout looks valid/);
