@@ -1,0 +1,22 @@
+{
+  "package": {
+    "name": "tea-time",
+    "version": "1.2.3",
+    "description": "Brew a pleasant cup of CLI tea.",
+    "license": "MIT",
+    "repository": "https://github.com/example/tea-time",
+    "binaries": ["tea-time"],
+    "test": {
+      "command": "tea-time --help",
+      "expect": "tea-time"
+    }
+  },
+  "artifacts": [
+    {
+      "url": "https://github.com/example/tea-time/releases/download/v1.2.3/tea-time-1.2.3.tar.gz",
+      "install": {
+        "tea-time": "release/bin/renamed-tool"
+      }
+    }
+  ]
+}

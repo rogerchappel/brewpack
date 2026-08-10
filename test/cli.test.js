@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { execFileSync, execSync, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 const cli = join(process.cwd(), 'bin/brewpack.js');
@@ -16,6 +16,14 @@ describe('brewpack CLI', () => {
   it('should inspect a fixture without error', () => {
     const out = execSync(`node ${cli} inspect fixtures/sample-tool --format json`, { encoding: 'utf8' });
     assert.ok(out.includes('"'), 'should produce JSON output');
+  });
+
+  it('generates a formula that renames a mismatched artifact basename', () => {
+    const target = mkdtempSync(join(tmpdir(), 'brewpack-cli-renamed-binary-'));
+    execFileSync(process.execPath, [cli, 'init', 'fixtures/renamed-binary', '--output', target]);
+    const formula = readFileSync(join(target, 'Formula', 'tea-time.rb'), 'utf8');
+    assert.match(formula, /bin\.install "release\/bin\/renamed-tool" => "tea-time"/);
+    assert.match(formula, /shell_output\("#\{bin\}\/tea-time --help"\)/);
   });
 
   it('should fail gracefully for missing tool', () => {

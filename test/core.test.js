@@ -40,6 +40,22 @@ test('renderFormula includes caveats and install block', async () => {
   assert.match(formula, /def caveats/);
 });
 
+test('renderFormula installs a nested artifact path with its matching basename', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.artifacts[0].install['tea-time'] = 'release/bin/tea-time';
+  const formula = renderFormula(parsePackageFixture(raw));
+  assert.match(formula, /bin\.install "release\/bin\/tea-time"/);
+  assert.doesNotMatch(formula, /release\/bin\/tea-time" =>/);
+});
+
+test('renderFormula renames a mismatched artifact basename to the declared binary', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.artifacts[0].install['tea-time'] = 'release/bin/renamed-tool';
+  const formula = renderFormula(parsePackageFixture(raw));
+  assert.match(formula, /bin\.install "release\/bin\/renamed-tool" => "tea-time"/);
+  assert.match(formula, /shell_output\("#\{bin\}\/tea-time --help"\)/);
+});
+
 test('parsePackageFixture rejects incomplete artifact install declarations', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   raw.package.binaries.push('tea-helper');
