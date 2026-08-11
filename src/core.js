@@ -89,7 +89,12 @@ export function renderFormula(spec) {
     : '';
 
   const installLines = spec.binaries
-    .map((bin) => `    bin.install ${JSON.stringify(spec.artifact.install[bin])}`)
+    .map((bin) => {
+      const source = spec.artifact.install[bin];
+      const sourceBasename = path.posix.basename(source.replaceAll('\\', '/'));
+      const destination = sourceBasename === bin ? '' : ` => ${JSON.stringify(bin)}`;
+      return `    bin.install ${JSON.stringify(source)}${destination}`;
+    })
     .join('\n');
   const command = spec.test.command.trim();
   const separator = command.search(/\s/);

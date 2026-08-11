@@ -86,7 +86,10 @@ output. When `test` is omitted, brewpack uses `<package-name> --help` and expect
 object maps every entry in `package.binaries` to the relative path that archive
 contains. The keys must match the declared binaries exactly; missing, extra,
 absolute, and parent-traversing paths are rejected. The generated formula and
-checksum instructions both use the declared artifact URL.
+checksum instructions both use the declared artifact URL. A nested source path
+whose basename matches the mapping key is installed directly. When the source
+basename differs, brewpack renders an explicit Homebrew destination rename so
+the installed executable is always `#{bin}/<mapping-key>`.
 
 ## Commands
 
