@@ -155,6 +155,21 @@ test('validateTap rejects malformed checksums and accepts 64 hex characters', as
   assert.equal((await validateTap(outputDir)).valid, true);
 });
 
+test('validateTap rejects an invalid formula class declaration', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-class-'));
+  await fs.mkdir(path.join(outputDir, 'Formula'));
+  await fs.writeFile(path.join(outputDir, 'README.md'), '# demo\n');
+  await fs.writeFile(
+    path.join(outputDir, 'Formula', '7zip.rb'),
+    `class 7zip < Formula\n  sha256 "${'a'.repeat(64)}"\nend\n`
+  );
+  const result = await validateTap(outputDir);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors, [
+    'Formula/7zip.rb: must declare a valid Formula subclass (for example, class Demo < Formula)'
+  ]);
+});
+
 test('initTap force replaces a renamed generated formula and preserves unrelated files', async () => {
   const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-rename-'));
   const renamedFixture = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-fixture-'));

@@ -113,7 +113,7 @@ describe('brewpack CLI', () => {
     writeFileSync(join(tap, 'README.md'), '# demo\n');
     const result = spawnSync(process.execPath, [cli, 'validate', tap], { encoding: 'utf8' });
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /Invalid formula checksum.*replace REPLACE_WITH_SHA256/);
+    assert.match(result.stderr, /Invalid formula.*replace REPLACE_WITH_SHA256/);
   });
 
   it('accepts a Formula directory containing a .rb formula with a valid checksum', () => {
@@ -123,5 +123,15 @@ describe('brewpack CLI', () => {
     writeFileSync(join(tap, 'README.md'), '# demo\n');
     const output = execFileSync(process.execPath, [cli, 'validate', tap], { encoding: 'utf8' });
     assert.match(output, /Tap layout looks valid/);
+  });
+
+  it('rejects an invalid formula class declaration', () => {
+    const tap = mkdtempSync(join(tmpdir(), 'brewpack-cli-class-'));
+    mkdirSync(join(tap, 'Formula'));
+    writeFileSync(join(tap, 'Formula', '7zip.rb'), `class 7zip < Formula\n  sha256 "${'a'.repeat(64)}"\nend\n`);
+    writeFileSync(join(tap, 'README.md'), '# demo\n');
+    const result = spawnSync(process.execPath, [cli, 'validate', tap], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Invalid formula.*must declare a valid Formula subclass/);
   });
 });
