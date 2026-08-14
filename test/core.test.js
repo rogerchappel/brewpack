@@ -19,6 +19,18 @@ test('parsePackageFixture normalises fixture data', async () => {
   assert.equal(spec.artifact.install['tea-time'], 'dist/tea-time');
 });
 
+test('parsePackageFixture prefixes a numeric-leading formula class', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.name = '7zip';
+  raw.package.binaries = ['7zip'];
+  raw.package.test.command = '7zip --help';
+  raw.artifacts[0].install = { '7zip': 'dist/7zip' };
+  const spec = parsePackageFixture(raw);
+  assert.equal(spec.formulaName, '7zip');
+  assert.equal(spec.formulaClass, 'V7zip');
+  assert.match(renderFormula(spec), /^class V7zip < Formula$/m);
+});
+
 test('buildPlan returns release metadata', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   const spec = parsePackageFixture(raw);

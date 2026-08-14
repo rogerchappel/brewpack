@@ -26,6 +26,19 @@ describe('brewpack CLI', () => {
     assert.match(formula, /shell_output\("#\{bin\}\/tea-time --help"\)/);
   });
 
+  it('generates a valid class for a numeric-leading package name', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'brewpack-cli-numeric-fixture-'));
+    const target = mkdtempSync(join(tmpdir(), 'brewpack-cli-numeric-tap-'));
+    const raw = JSON.parse(readFileSync('fixtures/sample-tool/brewpack.fixture.json', 'utf8'));
+    raw.package.name = '7zip';
+    raw.package.binaries = ['7zip'];
+    raw.package.test.command = '7zip --help';
+    raw.artifacts[0].install = { '7zip': 'dist/7zip' };
+    writeFileSync(join(fixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+    execFileSync(process.execPath, [cli, 'init', fixture, '--output', target, '--force']);
+    assert.match(readFileSync(join(target, 'Formula', '7zip.rb'), 'utf8'), /^class V7zip < Formula$/m);
+  });
+
   it('should fail gracefully for missing tool', () => {
     try {
       execSync(`node ${cli} inspect nonexistent-tool`, { stdio: 'pipe', encoding: 'utf8' });
