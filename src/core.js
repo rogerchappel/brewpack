@@ -55,11 +55,12 @@ export function parsePackageFixture(raw) {
   const repository = pkg.repository ?? homepage;
   const owner = tap?.owner ?? 'acme';
   const repo = tap?.repo ?? `homebrew-${slug}`;
-  const formulaClass = slug
+  const camelizedSlug = slug
     .split('-')
     .filter(Boolean)
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join('');
+  const formulaClass = /^\d/.test(camelizedSlug) ? `V${camelizedSlug}` : camelizedSlug;
 
   const binaries = Array.isArray(pkg.binaries) && pkg.binaries.length > 0 ? pkg.binaries : [slug];
   const artifact = parseArtifact(raw, binaries);

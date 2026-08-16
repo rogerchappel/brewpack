@@ -19,6 +19,18 @@ test('parsePackageFixture normalises fixture data', async () => {
   assert.equal(spec.artifact.install['tea-time'], 'dist/tea-time');
 });
 
+test('parsePackageFixture prefixes a numeric-leading formula class', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.name = '7zip';
+  raw.package.binaries = ['7zip'];
+  raw.package.test.command = '7zip --help';
+  raw.artifacts[0].install = { '7zip': 'dist/7zip' };
+  const spec = parsePackageFixture(raw);
+  assert.equal(spec.formulaName, '7zip');
+  assert.equal(spec.formulaClass, 'V7zip');
+  assert.match(renderFormula(spec), /^class V7zip < Formula$/m);
+});
+
 test('buildPlan returns release metadata', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   const spec = parsePackageFixture(raw);
@@ -141,6 +153,21 @@ test('validateTap rejects malformed checksums and accepts 64 hex characters', as
   assert.match(malformed.errors[0], /exactly 64 hexadecimal characters/);
   await fs.writeFile(formulaPath, formula.replace('REPLACE_WITH_SHA256', 'ABCDEF0123456789'.repeat(4)));
   assert.equal((await validateTap(outputDir)).valid, true);
+});
+
+test('validateTap rejects an invalid formula class declaration', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-class-'));
+  await fs.mkdir(path.join(outputDir, 'Formula'));
+  await fs.writeFile(path.join(outputDir, 'README.md'), '# demo\n');
+  await fs.writeFile(
+    path.join(outputDir, 'Formula', '7zip.rb'),
+    `class 7zip < Formula\n  sha256 "${'a'.repeat(64)}"\nend\n`
+  );
+  const result = await validateTap(outputDir);
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.errors, [
+    'Formula/7zip.rb: must declare a valid Formula subclass (for example, class Demo < Formula)'
+  ]);
 });
 
 test('initTap force replaces a renamed generated formula and preserves unrelated files', async () => {

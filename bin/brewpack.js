@@ -130,7 +130,7 @@ async function main() {
       if (result.missing.length) {
         console.error(`Invalid tap layout. Missing: ${result.missing.join(', ')}`);
       }
-      for (const error of result.errors ?? []) console.error(`Invalid formula checksum. ${error}`);
+      for (const error of result.errors ?? []) console.error(`Invalid formula. ${error}`);
       process.exitCode = 1;
       return;
     }

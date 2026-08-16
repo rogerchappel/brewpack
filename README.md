@@ -82,6 +82,10 @@ remaining arguments. `package.test.expect` is rendered as the formula's expected
 output. When `test` is omitted, brewpack uses `<package-name> --help` and expects
 `Usage`.
 
+The formula filename is the normalized, lowercase package slug. Its Ruby class is
+the camel-cased slug; when the slug begins with a digit, brewpack prefixes the class
+with `V` (for example, `7zip` becomes `Formula/7zip.rb` with class `V7zip`).
+
 `artifacts` must declare exactly one downloadable release archive. Its `install`
 object maps every entry in `package.binaries` to the relative path that archive
 contains. The keys must match the declared binaries exactly; missing, extra,
@@ -95,7 +99,7 @@ the installed executable is always `#{bin}/<mapping-key>`.
 
 - `brewpack inspect <fixture-dir> [--output <dir>] [--format json|text|both]` — emits a human-readable and/or JSON plan; `--output` also writes `inspection.json` and `inspection.txt`
 - `brewpack init <fixture-dir> --output <dir> [--force]` — writes a tap scaffold locally; plain `--force` replaces brewpack-owned output, including a formula renamed by the fixture, while preserving unrelated files
-- `brewpack validate <tap-dir>` — checks the tap layout, verifies the formula recorded in brewpack generation metadata, and requires every formula to contain a 64-hex-character SHA256
+- `brewpack validate <tap-dir>` — checks the tap layout, verifies the formula recorded in brewpack generation metadata, and requires every formula to declare a syntactically valid Formula subclass and contain a 64-hex-character SHA256
 
 Each command accepts exactly one positional directory. Options are command-specific,
 and options such as `--output` and `--format` require a value. The `--force` option is
