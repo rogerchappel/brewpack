@@ -39,6 +39,35 @@ describe('brewpack CLI', () => {
     assert.match(readFileSync(join(target, 'Formula', '7zip.rb'), 'utf8'), /^class V7zip < Formula$/m);
   });
 
+  it('rejects punctuation-only package names before inspect writes output', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-name-'));
+    const parent = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-output-'));
+    const output = join(parent, 'inspection');
+    const raw = JSON.parse(readFileSync('fixtures/sample-tool/brewpack.fixture.json', 'utf8'));
+    raw.package.name = '---';
+    writeFileSync(join(fixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+
+    const result = spawnSync(process.execPath, [cli, 'inspect', fixture, '--output', output], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /fixture\.package\.name must produce a non-empty Homebrew formula slug/);
+    assert.equal(existsSync(output), false);
+  });
+
+  it('rejects malformed binary metadata before init writes output', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-binary-'));
+    const parent = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-init-'));
+    const output = join(parent, 'tap');
+    const raw = JSON.parse(readFileSync('fixtures/sample-tool/brewpack.fixture.json', 'utf8'));
+    raw.package.binaries = ['../tea-time'];
+    raw.artifacts[0].install = { '../tea-time': 'dist/tea-time' };
+    writeFileSync(join(fixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+
+    const result = spawnSync(process.execPath, [cli, 'init', fixture, '--output', output], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /fixture\.package\.binaries\[0\] must be a valid executable name/);
+    assert.equal(existsSync(output), false);
+  });
+
   it('should fail gracefully for missing tool', () => {
     try {
       execSync(`node ${cli} inspect nonexistent-tool`, { stdio: 'pipe', encoding: 'utf8' });

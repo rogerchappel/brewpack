@@ -6,6 +6,28 @@ function ensureObject(value, label) {
   }
 }
 
+function ensureNonEmptyString(value, label) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${label} must be a non-empty string.`);
+  }
+}
+
+function parseBinaries(value, slug) {
+  if (value === undefined) return [slug];
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error('fixture.package.binaries must be a non-empty array.');
+  }
+  value.forEach((binary, index) => {
+    if (typeof binary !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._+-]*$/.test(binary)) {
+      throw new Error(`fixture.package.binaries[${index}] must be a valid executable name.`);
+    }
+  });
+  if (new Set(value).size !== value.length) {
+    throw new Error('fixture.package.binaries must not contain duplicates.');
+  }
+  return value;
+}
+
 function parseArtifact(raw, binaries) {
   if (!Array.isArray(raw.artifacts) || raw.artifacts.length !== 1) {
     throw new Error('fixture.artifacts must contain exactly one release artifact.');
@@ -46,15 +68,31 @@ export function parsePackageFixture(raw) {
   const { package: pkg, tap } = raw;
   ensureObject(pkg, 'fixture.package');
 
-  if (!pkg.name || !pkg.version || !pkg.description || !pkg.license) {
-    throw new Error('fixture.package requires name, version, description, and license.');
+  for (const field of ['name', 'version', 'description', 'license']) {
+    ensureNonEmptyString(pkg[field], `fixture.package.${field}`);
   }
 
   const slug = pkg.name.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  if (!slug) {
+    throw new Error('fixture.package.name must produce a non-empty Homebrew formula slug.');
+  }
+  if (tap !== undefined) ensureObject(tap, 'fixture.tap');
   const homepage = pkg.homepage ?? `https://example.com/${slug}`;
   const repository = pkg.repository ?? homepage;
   const owner = tap?.owner ?? 'acme';
   const repo = tap?.repo ?? `homebrew-${slug}`;
+  if (typeof owner !== 'string' || !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(owner)) {
+    throw new Error('fixture.tap.owner must be a valid GitHub owner.');
+  }
+  if (
+    typeof repo !== 'string'
+    || repo.length > 100
+    || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repo)
+    || repo === '.'
+    || repo === '..'
+  ) {
+    throw new Error('fixture.tap.repo must be a valid GitHub repository name.');
+  }
   const camelizedSlug = slug
     .split('-')
     .filter(Boolean)
@@ -62,8 +100,13 @@ export function parsePackageFixture(raw) {
     .join('');
   const formulaClass = /^\d/.test(camelizedSlug) ? `V${camelizedSlug}` : camelizedSlug;
 
-  const binaries = Array.isArray(pkg.binaries) && pkg.binaries.length > 0 ? pkg.binaries : [slug];
+  const binaries = parseBinaries(pkg.binaries, slug);
   const artifact = parseArtifact(raw, binaries);
+  if (pkg.test !== undefined) {
+    ensureObject(pkg.test, 'fixture.package.test');
+    ensureNonEmptyString(pkg.test.command, 'fixture.package.test.command');
+    ensureNonEmptyString(pkg.test.expect, 'fixture.package.test.expect');
+  }
   return {
     slug,
     formulaName: slug,
