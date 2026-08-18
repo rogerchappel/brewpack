@@ -36,6 +36,38 @@ test('parsePackageFixture prefixes a numeric-leading formula class', async () =>
   assert.match(renderFormula(spec), /^class V7zip < Formula$/m);
 });
 
+test('parsePackageFixture rejects a package name without a formula slug', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.name = '---';
+  assert.throws(
+    () => parsePackageFixture(raw),
+    /fixture\.package\.name must produce a non-empty Homebrew formula slug/
+  );
+});
+
+test('parsePackageFixture accepts scoped and numeric-leading package names', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.name = '@acme/7zip';
+  const spec = parsePackageFixture(raw);
+  assert.equal(spec.formulaName, 'acme-7zip');
+  assert.equal(spec.formulaClass, 'Acme7zip');
+});
+
+test('parsePackageFixture rejects malformed binaries and tap fields', async () => {
+  const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  const cases = [
+    { mutate: (raw) => { raw.package.binaries = ['../tea-time']; }, message: /fixture\.package\.binaries\[0\] must be a valid executable name/ },
+    { mutate: (raw) => { raw.package.binaries = ['']; }, message: /fixture\.package\.binaries\[0\] must be a valid executable name/ },
+    { mutate: (raw) => { raw.tap.owner = 'bad/owner'; }, message: /fixture\.tap\.owner must be a valid GitHub owner/ },
+    { mutate: (raw) => { raw.tap.repo = '../homebrew-tea'; }, message: /fixture\.tap\.repo must be a valid GitHub repository name/ }
+  ];
+  for (const { mutate, message } of cases) {
+    const raw = structuredClone(base);
+    mutate(raw);
+    assert.throws(() => parsePackageFixture(raw), message);
+  }
+});
+
 test('buildPlan returns release metadata', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   const spec = parsePackageFixture(raw);
