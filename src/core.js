@@ -106,7 +106,7 @@ export function renderFormula(spec) {
   }
   const testCommand = `#{bin}/${executable}${argumentsText.replaceAll('#{', '\\#{')}`;
 
-  return `class ${spec.formulaClass} < Formula\n  desc ${JSON.stringify(spec.description)}\n  homepage ${JSON.stringify(spec.homepage)}\n  url ${JSON.stringify(spec.artifact.url)}\n  sha256 ${JSON.stringify('REPLACE_WITH_SHA256')}\n  license ${JSON.stringify(spec.license)}\n\n  def install\n${installLines}\n  end\n\n  test do\n    output = shell_output(${JSON.stringify(testCommand)})\n    assert_match ${JSON.stringify(spec.test.expect)}, output\n  end${caveatBlock}end\n`;
+  return `class ${spec.formulaClass} < Formula\n  desc ${JSON.stringify(spec.description)}\n  homepage ${JSON.stringify(spec.homepage)}\n  url ${JSON.stringify(spec.artifact.url)}\n  sha256 ${JSON.stringify('REPLACE_WITH_SHA256')}\n  license ${JSON.stringify(spec.license)}\n\n  def install\n${installLines}\n  end\n\n  test do\n    output = shell_output(${JSON.stringify(testCommand)})\n    assert_match ${JSON.stringify(spec.test.expect)}, output\n  end${caveatBlock || '\n'}end\n`;
 }
 
 export function renderTapReadme(spec) {
