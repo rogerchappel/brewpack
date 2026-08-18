@@ -3,12 +3,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { buildPlan, parsePackageFixture, renderFormula, renderTapReadme } from '../src/core.js';
 import { initTap, inspectProject, validateTap } from '../src/lib.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.join(__dirname, '..', 'fixtures', 'sample-tool');
+function assertValidRuby(formula) {
+  const result = spawnSync('ruby', ['-c'], { input: formula, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+}
 
 test('parsePackageFixture normalises fixture data', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
@@ -50,6 +55,17 @@ test('renderFormula includes caveats and install block', async () => {
   assert.match(formula, /bin\.install "dist\/tea-time"/);
   assert.match(formula, /releases\/download\/v1\.2\.3\/tea-time-1\.2\.3\.tar\.gz/);
   assert.match(formula, /def caveats/);
+  assert.match(formula, /  end\nend\n$/);
+  assertValidRuby(formula);
+});
+
+test('renderFormula separates class and test endings without caveats', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  delete raw.package.caveats;
+  const formula = renderFormula(parsePackageFixture(raw));
+  assert.doesNotMatch(formula, /endend/);
+  assert.match(formula, /  end\nend\n$/);
+  assertValidRuby(formula);
 });
 
 test('renderFormula installs a nested artifact path with its matching basename', async () => {
@@ -168,6 +184,20 @@ test('validateTap rejects an invalid formula class declaration', async () => {
   assert.deepEqual(result.errors, [
     'Formula/7zip.rb: must declare a valid Formula subclass (for example, class Demo < Formula)'
   ]);
+});
+
+test('validateTap rejects malformed Ruby syntax', async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-syntax-'));
+  await initTap(fixtureDir, outputDir, { force: true });
+  const formulaPath = path.join(outputDir, 'Formula', 'tea-time.rb');
+  const formula = await fs.readFile(formulaPath, 'utf8');
+  await fs.writeFile(
+    formulaPath,
+    formula.replace('REPLACE_WITH_SHA256', 'a'.repeat(64)).replace(/\nend\n$/, 'endend\n')
+  );
+  const result = await validateTap(outputDir);
+  assert.equal(result.valid, false);
+  assert.match(result.errors[0], /^Formula\/tea-time\.rb: invalid Ruby syntax:/);
 });
 
 test('initTap force replaces a renamed generated formula and preserves unrelated files', async () => {
