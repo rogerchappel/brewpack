@@ -85,6 +85,18 @@ output. When `test` is omitted, brewpack uses `<package-name> --help` and expect
 The formula filename is the normalized, lowercase package slug. Its Ruby class is
 the camel-cased slug; when the slug begins with a digit, brewpack prefixes the class
 with `V` (for example, `7zip` becomes `Formula/7zip.rb` with class `V7zip`).
+Package names may include scopes and punctuation (for example, `@acme/tea` becomes
+`acme-tea`), but must contain at least one ASCII letter or digit so normalization
+produces a non-empty formula filename and Ruby class.
+
+When present, `package.binaries` must be a non-empty list of unique executable
+names. Each name must begin with an ASCII letter or digit and may then contain
+letters, digits, `.`, `_`, `+`, or `-`; paths and whitespace are not accepted.
+`tap.owner` uses GitHub owner-name rules, while `tap.repo` must be a non-empty
+GitHub repository name made from letters, digits, `.`, `_`, or `-`. Required
+package fields and explicit test commands/expectations must be non-empty strings.
+Invalid fixture metadata is rejected before `inspect --output` or `init` creates
+output.
 
 `artifacts` must declare exactly one downloadable release archive. Its `install`
 object maps every entry in `package.binaries` to the relative path that archive
