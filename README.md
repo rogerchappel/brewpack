@@ -56,6 +56,7 @@ Create a `brewpack.fixture.json` file in a local directory:
     "license": "MIT",
     "repository": "https://github.com/example/tea-time",
     "binaries": ["tea-time"],
+    "caveats": ["Run tea-time doctor after installation."],
     "test": {
       "command": "tea-time doctor --json",
       "expect": "\"healthy\":true"
@@ -88,6 +89,10 @@ with `V` (for example, `7zip` becomes `Formula/7zip.rb` with class `V7zip`).
 Package names may include scopes and punctuation (for example, `@acme/tea` becomes
 `acme-tea`), but must contain at least one ASCII letter or digit so normalization
 produces a non-empty formula filename and Ruby class.
+
+When present, `package.caveats` must be an array of strings. Each string is
+rendered as one line in the generated formula's `caveats` block; omit the field
+or use an empty array when the formula needs no caveats.
 
 When present, `package.binaries` must be a non-empty list of unique executable
 names. Each name must begin with an ASCII letter or digit and may then contain
