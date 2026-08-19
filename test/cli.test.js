@@ -68,6 +68,20 @@ describe('brewpack CLI', () => {
     assert.equal(existsSync(output), false);
   });
 
+  it('rejects malformed caveats before inspect writes output', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-caveats-'));
+    const parent = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-caveats-output-'));
+    const output = join(parent, 'inspection');
+    const raw = JSON.parse(readFileSync('fixtures/sample-tool/brewpack.fixture.json', 'utf8'));
+    raw.package.caveats = 'not-a-list';
+    writeFileSync(join(fixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+
+    const result = spawnSync(process.execPath, [cli, 'inspect', fixture, '--output', output], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /fixture\.package\.caveats must be an array of strings/);
+    assert.equal(existsSync(output), false);
+  });
+
   it('should fail gracefully for missing tool', () => {
     try {
       execSync(`node ${cli} inspect nonexistent-tool`, { stdio: 'pipe', encoding: 'utf8' });

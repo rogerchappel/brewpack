@@ -28,6 +28,19 @@ function parseBinaries(value, slug) {
   return value;
 }
 
+function parseCaveats(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    throw new Error('fixture.package.caveats must be an array of strings.');
+  }
+  value.forEach((caveat, index) => {
+    if (typeof caveat !== 'string') {
+      throw new Error(`fixture.package.caveats[${index}] must be a string.`);
+    }
+  });
+  return value;
+}
+
 function parseArtifact(raw, binaries) {
   if (!Array.isArray(raw.artifacts) || raw.artifacts.length !== 1) {
     throw new Error('fixture.artifacts must contain exactly one release artifact.');
@@ -101,6 +114,7 @@ export function parsePackageFixture(raw) {
   const formulaClass = /^\d/.test(camelizedSlug) ? `V${camelizedSlug}` : camelizedSlug;
 
   const binaries = parseBinaries(pkg.binaries, slug);
+  const caveats = parseCaveats(pkg.caveats);
   const artifact = parseArtifact(raw, binaries);
   if (pkg.test !== undefined) {
     ensureObject(pkg.test, 'fixture.package.test');
@@ -121,7 +135,7 @@ export function parsePackageFixture(raw) {
     repo,
     binaries,
     install: pkg.install ?? {},
-    caveats: pkg.caveats ?? [],
+    caveats,
     test: pkg.test ?? { command: `${slug} --help`, expect: 'Usage' },
     artifact
   };
