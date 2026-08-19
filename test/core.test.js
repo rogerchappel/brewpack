@@ -91,6 +91,20 @@ test('renderFormula includes caveats and install block', async () => {
   assertValidRuby(formula);
 });
 
+test('parsePackageFixture validates every caveat as a string', async () => {
+  const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  for (const caveats of ['not-a-list', [42], ['Valid caveat.', null]]) {
+    const raw = structuredClone(base);
+    raw.package.caveats = caveats;
+    assert.throws(
+      () => parsePackageFixture(raw),
+      Array.isArray(caveats)
+        ? /fixture\.package\.caveats\[\d+\] must be a string/
+        : /fixture\.package\.caveats must be an array of strings/
+    );
+  }
+});
+
 test('renderFormula separates class and test endings without caveats', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   delete raw.package.caveats;
