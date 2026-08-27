@@ -29,7 +29,8 @@
     "build": "node --eval \"import('./src/index.js')\"",
     "smoke": "node ./bin/brewpack.js inspect ./fixtures/sample-tool --output ./tmp/smoke-inspect --format both && node ./bin/brewpack.js init ./fixtures/sample-tool --output ./tmp/smoke-tap --force && node scripts/finalize-smoke-formula.mjs ./tmp/smoke-tap/Formula/tea-time.rb && node ./bin/brewpack.js validate ./tmp/smoke-tap",
     "package:smoke": "node scripts/package-smoke.mjs",
-    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke",
+    "release:workflow-check": "node scripts/check-release-workflows.mjs",
+    "release:check": "npm run release:workflow-check && npm run check && npm test && npm run build && npm run smoke && npm run package:smoke",
     "lint": "npm run check"
   },
   "keywords": [
