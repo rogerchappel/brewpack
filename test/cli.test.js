@@ -39,6 +39,21 @@ describe('brewpack CLI', () => {
     assert.match(readFileSync(join(target, 'Formula', '7zip.rb'), 'utf8'), /^class V7zip < Formula$/m);
   });
 
+  it('writes the fixture version for an opaque artifact URL', () => {
+    const fixture = mkdtempSync(join(tmpdir(), 'brewpack-cli-opaque-fixture-'));
+    const target = mkdtempSync(join(tmpdir(), 'brewpack-cli-opaque-tap-'));
+    const raw = JSON.parse(readFileSync('fixtures/sample-tool/brewpack.fixture.json', 'utf8'));
+    raw.package.version = '2.3.4';
+    raw.artifacts[0].url = 'https://example.com/download/latest.tar.gz';
+    writeFileSync(join(fixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+
+    execFileSync(process.execPath, [cli, 'init', fixture, '--output', target, '--force']);
+    const formulaPath = join(target, 'Formula', 'tea-time.rb');
+    const formula = readFileSync(formulaPath, 'utf8');
+    assert.match(formula, /^  version "2\.3\.4"$/m);
+    execFileSync('ruby', ['-c', formulaPath]);
+  });
+
   it('rejects punctuation-only package names before inspect writes output', () => {
     const fixture = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-name-'));
     const parent = mkdtempSync(join(tmpdir(), 'brewpack-cli-invalid-output-'));
