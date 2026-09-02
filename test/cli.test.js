@@ -82,6 +82,22 @@ describe('brewpack CLI', () => {
     assert.equal(existsSync(output), false);
   });
 
+  it('rejects malformed package URLs before inspect or init writes output', () => {
+    for (const [command, field, value] of [['inspect', 'homepage', 42], ['init', 'repository', 'not-a-url']]) {
+      const fixture = mkdtempSync(join(tmpdir(), `brewpack-cli-invalid-${field}-`));
+      const parent = mkdtempSync(join(tmpdir(), `brewpack-cli-invalid-${field}-output-`));
+      const output = join(parent, command === 'inspect' ? 'inspection' : 'tap');
+      const raw = JSON.parse(readFileSync('fixtures/sample-tool/brewpack.fixture.json', 'utf8'));
+      raw.package[field] = value;
+      writeFileSync(join(fixture, 'brewpack.fixture.json'), JSON.stringify(raw));
+
+      const result = spawnSync(process.execPath, [cli, command, fixture, '--output', output], { encoding: 'utf8' });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, new RegExp(`fixture\\.package\\.${field} must be an absolute HTTP\\(S\\) URL`));
+      assert.equal(existsSync(output), false);
+    }
+  });
+
   it('should fail gracefully for missing tool', () => {
     try {
       execSync(`node ${cli} inspect nonexistent-tool`, { stdio: 'pipe', encoding: 'utf8' });

@@ -12,6 +12,18 @@ function ensureNonEmptyString(value, label) {
   }
 }
 
+function ensureHttpUrl(value, label) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${label} must be an absolute HTTP(S) URL.`);
+  }
+  try {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('unsupported protocol');
+  } catch {
+    throw new Error(`${label} must be an absolute HTTP(S) URL.`);
+  }
+}
+
 function parseBinaries(value, slug) {
   if (value === undefined) return [slug];
   if (!Array.isArray(value) || value.length === 0) {
@@ -92,6 +104,8 @@ export function parsePackageFixture(raw) {
   if (tap !== undefined) ensureObject(tap, 'fixture.tap');
   const homepage = pkg.homepage ?? `https://example.com/${slug}`;
   const repository = pkg.repository ?? homepage;
+  ensureHttpUrl(homepage, 'fixture.package.homepage');
+  ensureHttpUrl(repository, 'fixture.package.repository');
   const owner = tap?.owner ?? 'acme';
   const repo = tap?.repo ?? `homebrew-${slug}`;
   if (typeof owner !== 'string' || !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(owner)) {
