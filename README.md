@@ -83,6 +83,11 @@ remaining arguments. `package.test.expect` is rendered as the formula's expected
 output. When `test` is omitted, brewpack uses `<package-name> --help` and expects
 `Usage`.
 
+`package.version` is written to an explicit Homebrew `version` stanza. This keeps
+the fixture version authoritative even when the artifact URL is opaque, such as
+`https://example.com/download/latest.tar.gz`, and Homebrew cannot infer a version
+from the filename.
+
 The formula filename is the normalized, lowercase package slug. Its Ruby class is
 the camel-cased slug; when the slug begins with a digit, brewpack prefixes the class
 with `V` (for example, `7zip` becomes `Formula/7zip.rb` with class `V7zip`).
