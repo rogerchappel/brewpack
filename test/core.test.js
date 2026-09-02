@@ -110,6 +110,16 @@ test('renderFormula includes caveats and install block', async () => {
   assertValidRuby(formula);
 });
 
+test('renderFormula preserves the package version for an opaque artifact URL', async () => {
+  const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  raw.package.version = '2.3.4';
+  raw.artifacts[0].url = 'https://example.com/download/latest.tar.gz';
+  const formula = renderFormula(parsePackageFixture(raw));
+  assert.match(formula, /^  url "https:\/\/example\.com\/download\/latest\.tar\.gz"$/m);
+  assert.match(formula, /^  version "2\.3\.4"$/m);
+  assertValidRuby(formula);
+});
+
 test('parsePackageFixture validates every caveat as a string', async () => {
   const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   for (const caveats of ['not-a-list', [42], ['Valid caveat.', null]]) {
