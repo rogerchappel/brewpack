@@ -100,6 +100,9 @@ letters, digits, `.`, `_`, `+`, or `-`; paths and whitespace are not accepted.
 `tap.owner` uses GitHub owner-name rules, while `tap.repo` must be a non-empty
 GitHub repository name made from letters, digits, `.`, `_`, or `-`. Required
 package fields and explicit test commands/expectations must be non-empty strings.
+When supplied, `package.homepage` and `package.repository` must be non-empty,
+absolute HTTP or HTTPS URLs. When omitted, the homepage defaults to
+`https://example.com/<package-slug>` and the repository defaults to the homepage.
 Invalid fixture metadata is rejected before `inspect --output` or `init` creates
 output.
 
