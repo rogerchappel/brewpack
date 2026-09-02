@@ -53,6 +53,25 @@ test('parsePackageFixture accepts scoped and numeric-leading package names', asy
   assert.equal(spec.formulaClass, 'Acme7zip');
 });
 
+test('parsePackageFixture validates explicit package URLs and preserves defaults', async () => {
+  const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  for (const [field, value] of [['homepage', 42], ['homepage', ''], ['repository', 'github.com/acme/tool'], ['repository', 'file:///tmp/tool']]) {
+    const raw = structuredClone(base);
+    raw.package[field] = value;
+    assert.throws(
+      () => parsePackageFixture(raw),
+      new RegExp(`fixture\\.package\\.${field} must be an absolute HTTP\\(S\\) URL`)
+    );
+  }
+
+  const defaults = structuredClone(base);
+  delete defaults.package.homepage;
+  delete defaults.package.repository;
+  const spec = parsePackageFixture(defaults);
+  assert.equal(spec.homepage, 'https://example.com/tea-time');
+  assert.equal(spec.repository, spec.homepage);
+});
+
 test('parsePackageFixture rejects malformed binaries and tap fields', async () => {
   const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   const cases = [
