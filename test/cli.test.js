@@ -180,6 +180,16 @@ describe('brewpack CLI', () => {
     assert.match(result.stderr, /Missing: Formula\/\*\.rb/);
   });
 
+  it('rejects Formula when it is a regular file', () => {
+    const tap = mkdtempSync(join(tmpdir(), 'brewpack-cli-formula-file-'));
+    writeFileSync(join(tap, 'Formula'), 'not a directory\n');
+    writeFileSync(join(tap, 'README.md'), '# demo\n');
+    const result = spawnSync(process.execPath, [cli, 'validate', tap], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Invalid tap layout\. Missing: Formula \(must be a directory\)/);
+    assert.doesNotMatch(result.stderr, /ENOTDIR/);
+  });
+
   it('rejects the generated placeholder with a checksum diagnostic', () => {
     const tap = mkdtempSync(join(tmpdir(), 'brewpack-cli-placeholder-'));
     mkdirSync(join(tap, 'Formula'));
