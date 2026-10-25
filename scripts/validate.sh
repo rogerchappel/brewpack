@@ -25,6 +25,7 @@ done
 run "unit tests" npm test
 run "check" npm run check
 run "build" npm run build
+run "release workflow consistency" node scripts/check-release-workflows.mjs
 run "smoke" npm run smoke
 run "package dry run" npm pack --dry-run
 
