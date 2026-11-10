@@ -130,6 +130,32 @@ Each command accepts exactly one positional directory. Options are command-speci
 and options such as `--output` and `--format` require a value. The `--force` option is
 a boolean switch and does not accept a value such as `--force false`.
 
+## Programmatic API
+
+The package root exports `inspectProject`, `initTap`, and `validateTap` for Node.js
+applications. The input directory must contain a valid `brewpack.fixture.json`
+with the same fields and constraints described above. For example:
+
+```js
+import { inspectProject, validateTap } from 'brewpack';
+
+const { spec, plan } = await inspectProject('./fixtures/sample-tool');
+console.log(spec.formulaName); // normalized formula name, e.g. "sample-tool"
+console.log(plan.generatedFiles); // paths the plan will generate
+
+const result = await validateTap('./tmp/homebrew-sample-tool');
+if (!result.valid) {
+  console.error(result.missing ?? result.errors);
+}
+```
+
+`inspectProject(inputDir)` resolves to `{ spec, plan }`: `spec` is the validated,
+normalized fixture and `plan` describes the generated files and formula metadata.
+Invalid or missing fixture JSON rejects the promise with an error.
+`validateTap(targetDir)` resolves to a result object with a `valid` boolean;
+invalid layouts include `missing`, and formula validation failures include
+`errors`. It reads the generated tap from disk and does not modify it.
+
 ## Safety boundaries
 
 - Local files only.
