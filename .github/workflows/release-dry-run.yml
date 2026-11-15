@@ -40,6 +40,8 @@ jobs:
         run: npm run release:check
       - name: Generate release notes preview
         run: node /tmp/releasebox/bin/releasebox.js notes . > RELEASE_NOTES.md
+      - name: Display release notes preview
+        run: cat RELEASE_NOTES.md
       - name: Add release notes preview to job summary
         run: |
           {
