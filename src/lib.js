@@ -6,6 +6,7 @@ import {
   buildPlan,
   parsePackageFixture,
   renderFormula,
+  renderFormulas,
   renderTapReadme,
   resolveOutputPaths,
   validateTapLayout
@@ -53,7 +54,7 @@ export async function inspectProject(inputDir) {
 export async function initTap(inputDir, outputDir, { force = false } = {}) {
   const { spec, plan } = await inspectProject(inputDir);
   const paths = resolveOutputPaths(outputDir, spec);
-  const formula = renderFormula(spec);
+  const formulas = renderFormulas(spec);
   const readme = renderTapReadme(spec);
   const planJson = JSON.stringify(plan, null, 2) + '\n';
 
@@ -66,14 +67,19 @@ export async function initTap(inputDir, outputDir, { force = false } = {}) {
 
   if (force) {
     const previousPlan = await readPlan(paths.planFile);
-    const previousFormula = ownedFormulaFromPlan(previousPlan);
-    if (previousFormula && previousFormula !== `Formula/${spec.formulaName}.rb`) {
-      await fs.rm(path.join(paths.root, previousFormula), { force: true });
+    const previousFormulas = previousPlan?.generatedFiles?.filter((file) => /^Formula\/[a-zA-Z0-9-]+\.rb$/.test(file)) ?? [];
+    const currentFormulas = new Set(formulas.map((item) => `Formula/${item.formulaName}.rb`));
+    const legacyFormula = ownedFormulaFromPlan(previousPlan);
+    if (legacyFormula) previousFormulas.push(legacyFormula);
+    for (const previousFormula of new Set(previousFormulas)) {
+      if (!currentFormulas.has(previousFormula)) await fs.rm(path.join(paths.root, previousFormula), { force: true });
     }
   }
 
   await fs.mkdir(paths.formulaDir, { recursive: true });
-  await fs.writeFile(paths.formulaFile, formula);
+  for (const formula of formulas) {
+    await fs.writeFile(path.join(paths.formulaDir, `${formula.formulaName}.rb`), formula.content);
+  }
   await fs.writeFile(paths.readmeFile, readme);
   await fs.writeFile(paths.planFile, planJson);
   return { spec, plan, paths };
@@ -95,10 +101,13 @@ export async function validateTap(targetDir) {
       return { valid: false, missing: ['Formula/*.rb'] };
     }
     const plan = await readPlan(path.join(targetDir, 'brewpack.plan.json'));
-    const expectedFormula = ownedFormulaFromPlan(plan);
-    if (expectedFormula && !formulas.includes(path.basename(expectedFormula))) {
-      return { valid: false, missing: [expectedFormula] };
+    const expectedFormulas = plan?.generatedFiles?.filter((file) => /^Formula\/[a-zA-Z0-9-]+\.rb$/.test(file)) ?? [];
+    if (expectedFormulas.length === 0) {
+      const legacyFormula = ownedFormulaFromPlan(plan);
+      if (legacyFormula) expectedFormulas.push(legacyFormula);
     }
+    const missingFormulas = expectedFormulas.filter((file) => !formulas.includes(path.basename(file)));
+    if (missingFormulas.length) return { valid: false, missing: missingFormulas };
     const formulaErrors = [];
     for (const formula of formulas.filter((file) => file.endsWith('.rb'))) {
       const relativePath = `Formula/${formula}`;
