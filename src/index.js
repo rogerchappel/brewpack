@@ -1,2 +1,2 @@
 export { inspectProject, initTap, validateTap } from './lib.js';
-export { parsePackageFixture, renderFormula, renderTapReadme, buildPlan } from './core.js';
+export { parsePackageFixture, renderFormula, renderFormulas, renderTapReadme, buildPlan } from './core.js';

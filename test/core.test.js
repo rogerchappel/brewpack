@@ -204,6 +204,47 @@ test('renderFormula rejects a test command for an undeclared binary', async () =
   );
 });
 
+test('multi-artifact fixture inspects, generates, and validates every formula', async () => {
+  const inputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-multi-fixture-'));
+  const fixture = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  fixture.artifacts.push({ url: 'https://example.com/tea-time-arm.tar.gz', install: { 'tea-time': 'arm/bin/tea-time' } });
+  await fs.writeFile(path.join(inputDir, 'brewpack.fixture.json'), JSON.stringify(fixture));
+
+  const inspected = await inspectProject(inputDir);
+  assert.deepEqual(inspected.plan.generatedFiles, [
+    'Formula/tea-time.rb', 'Formula/tea-time-2.rb', 'README.md', 'brewpack.plan.json'
+  ]);
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-multi-tap-'));
+  await initTap(inputDir, outputDir, { force: true });
+  const primary = await fs.readFile(path.join(outputDir, 'Formula', 'tea-time.rb'), 'utf8');
+  const secondary = await fs.readFile(path.join(outputDir, 'Formula', 'tea-time-2.rb'), 'utf8');
+  assert.match(primary, /^class TeaTime < Formula/m);
+  assert.match(secondary, /^class TeaTime2 < Formula/m);
+  assert.match(secondary, /tea-time-arm\.tar\.gz/);
+  for (const name of ['tea-time.rb', 'tea-time-2.rb']) {
+    const formulaPath = path.join(outputDir, 'Formula', name);
+    const source = await fs.readFile(formulaPath, 'utf8');
+    await fs.writeFile(formulaPath, source.replace('REPLACE_WITH_SHA256', 'a'.repeat(64)));
+  }
+  assert.equal((await validateTap(outputDir)).valid, true);
+  await fs.rm(inputDir, { recursive: true, force: true });
+  await fs.rm(outputDir, { recursive: true, force: true });
+});
+
+test('validateTap reports each missing generated formula', async () => {
+  const inputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-multi-missing-fixture-'));
+  const fixture = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  fixture.artifacts.push({ url: 'https://example.com/second.tar.gz', install: { 'tea-time': 'bin/tea-time' } });
+  await fs.writeFile(path.join(inputDir, 'brewpack.fixture.json'), JSON.stringify(fixture));
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'brewpack-multi-missing-tap-'));
+  await initTap(inputDir, outputDir, { force: true });
+  await fs.rm(path.join(outputDir, 'Formula', 'tea-time-2.rb'));
+  const result = await validateTap(outputDir);
+  assert.deepEqual(result.missing, ['Formula/tea-time-2.rb']);
+  await fs.rm(inputDir, { recursive: true, force: true });
+  await fs.rm(outputDir, { recursive: true, force: true });
+});
+
 test('inspectProject reads local fixture', async () => {
   const payload = await inspectProject(fixtureDir);
   assert.equal(payload.spec.packageName, 'tea-time');

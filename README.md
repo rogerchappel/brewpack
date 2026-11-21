@@ -111,14 +111,18 @@ absolute HTTP or HTTPS URLs. When omitted, the homepage defaults to
 Invalid fixture metadata is rejected before `inspect --output` or `init` creates
 output.
 
-`artifacts` must declare exactly one downloadable release archive. Its `install`
-object maps every entry in `package.binaries` to the relative path that archive
+`artifacts` may declare one or more downloadable release archives. Each archive's
+`install` object maps every entry in `package.binaries` to the relative path that archive
 contains. The keys must match the declared binaries exactly; missing, extra,
 absolute, and parent-traversing paths are rejected. The generated formula and
 checksum instructions both use the declared artifact URL. A nested source path
 whose basename matches the mapping key is installed directly. When the source
 basename differs, brewpack renders an explicit Homebrew destination rename so
-the installed executable is always `#{bin}/<mapping-key>`.
+the installed executable is always `#{bin}/<mapping-key>`. Each artifact generates
+a separate formula: the first uses the package slug, and later formulas append `-2`,
+`-3`, and so on (with matching numeric Ruby class suffixes). The inspect plan lists
+every generated formula and the generated README documents each install command
+and archive. `package.test`, when supplied, applies to every generated formula.
 
 ## Commands
 
