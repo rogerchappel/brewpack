@@ -15,6 +15,20 @@ function assertValidRuby(formula) {
   assert.equal(result.status, 0, result.stderr);
 }
 
+test('parsePackageFixture validates required fields as non-empty strings', async () => {
+  const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  for (const field of ['name', 'version', 'description', 'license']) {
+    for (const value of [null, 42, {}, '']) {
+      const raw = structuredClone(base);
+      raw.package[field] = value;
+      assert.throws(
+        () => parsePackageFixture(raw),
+        new RegExp(`fixture\\.package\\.${field} must be a non-empty string`)
+      );
+    }
+  }
+});
+
 test('parsePackageFixture normalises fixture data', async () => {
   const raw = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   const spec = parsePackageFixture(raw);
