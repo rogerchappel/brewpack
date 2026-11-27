@@ -7,6 +7,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, rm, writeFile, cp } from 'node:fs/promises';
 
+test('release dry-run runs when its workflow guard changes', async () => {
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const workflow = await readFile(path.join(root, '.github/workflows/release-dry-run.yml'), 'utf8');
+  assert.match(workflow, /^\s*- scripts\/check-release-workflows\.mjs\s*$/m);
+});
+
 test('release workflow guard follows npm scripts and rejects publishing commands', async () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));

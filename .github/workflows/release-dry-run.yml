@@ -8,6 +8,7 @@ on:
       - package-lock.json
       - releasebox.config.json
       - .github/workflows/release*.yml
+      - scripts/check-release-workflows.mjs
 
 permissions:
   contents: read
