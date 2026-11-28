@@ -56,7 +56,11 @@ function parseCaveats(value) {
 function parseArtifact(raw, binaries, label = 'fixture.artifacts[0]') {
   ensureObject(raw, label);
   ensureObject(raw.install, `${label}.install`);
-  if (typeof raw.url !== 'string' || !/^https?:\/\/\S+$/.test(raw.url)) {
+  try {
+    if (typeof raw.url !== 'string' || !raw.url.trim()) throw new Error('missing URL');
+    const url = new URL(raw.url);
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || !/^https?:\/\/[^/?#]+/i.test(raw.url)) throw new Error('invalid HTTP(S) URL');
+  } catch {
     throw new Error(`${label}.url must be an absolute HTTP(S) URL.`);
   }
 

@@ -134,6 +134,18 @@ test('renderFormula preserves the package version for an opaque artifact URL', a
   assertValidRuby(formula);
 });
 
+test('parsePackageFixture rejects artifact URLs without a valid HTTP(S) host', async () => {
+  const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
+  for (const url of ['https://', 'http://?query', 'https://?query', 'https:///path', 'https://exa mple.com/file.tar.gz', 'ftp://example.com/file.tar.gz']) {
+    const raw = structuredClone(base);
+    raw.artifacts[0].url = url;
+    assert.throws(
+      () => parsePackageFixture(raw),
+      /fixture\.artifacts\[0\]\.url must be an absolute HTTP\(S\) URL/
+    );
+  }
+});
+
 test('parsePackageFixture validates every caveat as a string', async () => {
   const base = JSON.parse(await fs.readFile(path.join(fixtureDir, 'brewpack.fixture.json'), 'utf8'));
   for (const caveats of ['not-a-list', [42], ['Valid caveat.', null]]) {
